@@ -1,0 +1,12 @@
+/.env
+/.env.sample
+/.git
+/.gitignore
+/.venv
+/.vscode
+/.mypy_cache
+/Dockerfile
+/corpus
+/last_mention_id.json
+/result
+**/__pycache__
