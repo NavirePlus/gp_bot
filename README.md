@@ -24,7 +24,7 @@
 
 ```
 $ cd /path/to
-$ git pull https://github.com/NavirePlus/gp_bot.git
+$ git clone https://github.com/NavirePlus/gp_bot.git
 $ cd gp_bot/
 $ docker-compose build
 $ docker-compose up -d
@@ -146,7 +146,9 @@ $ pyenv install 3.7.6
 1. Install gp_bot libraries.
 
 ```
-$ cd /path/to/gp_bot/
+$ cd /path/to/
+$ git clone https://github.com/NavirePlus/gp_bot.git
+$ cd gp_bot/
 $ pyenv global 3.7.6
 $ python -m venv .venv
 $ pip install poetry==1.0.3

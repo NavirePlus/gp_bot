@@ -2,7 +2,8 @@ version: "3"
 
 services:
   api:
-    image: gp_bot:1.0.0
+    image: gp_bot:1.0.1
+    container_name: gp_bot
     build: .
     environment:
     - TWITTER_CONSUMER_KEY

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gp_bot"
-version = "1.0.0"
+version = "1.0.1"
 description = "Gomi-People bot for Twitter"
 
 license = "MIT"
