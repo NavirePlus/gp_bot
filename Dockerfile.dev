@@ -1,0 +1,16 @@
+FROM python:3.7.9-slim-buster
+
+ENV TZ=Asia/Tokyo
+
+COPY . /tmp
+
+WORKDIR /tmp
+
+RUN set -ex \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends git curl \
+    && pip install --no-cache-dir poetry==1.0.10 \
+    && poetry config virtualenvs.create false \
+    && poetry update \
+    && poetry install \
+    && rm -rf /root/.cache/* /tmp/* /var/cache/apt/*

@@ -113,47 +113,11 @@ MIT
 
 + 今は亡き[ピングーBot](http://twitter.com/Pingu_bot)の生みの親である[くぼみ](http://twitter.com/dekobokoya)
 
-## How to develop
+## 開発手順
 
-In CentOS 8
-
-1. Install packages.
-
-```
-$ sudo yum install -y bzip2-devel gcc git libffi-devel openssl-devel readline-devel sqlite-devel zlib-devel
-```
-
-1. Install pyenv.
-
-```
-$ git clone https://github.com/pyenv/pyenv.git ~/.pyenv
-```
-
-1. Add pyenv settings.
-
-```
-$ echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
-$ echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-$ source ~/.bash_profile
-```
-
-1. Install Python with pyenv.
-
-```
-$ pyenv install 3.7.6
-```
-
-1. Install gp_bot libraries.
-
-```
-$ cd /path/to/
-$ git clone https://github.com/NavirePlus/gp_bot.git
-$ cd gp_bot/
-$ pyenv global 3.7.6
-$ python -m venv .venv
-$ pip install poetry==1.0.3
-$ poetry install
-```
++ このリポジトリをcloneした後、[VSCodeのRemote-Containers](https://code.visualstudio.com/docs/remote/containers)を使うと自動的に開発環境がコンテナで構築されます。
++ Remote-Containersを使うためにはお使いの環境にDockerおよびdocker-composeがインストールされている必要があります。
+    + WSL2 + Docker Desctop for Windowsでも可能です
 
 ## TODO
 
