@@ -121,4 +121,4 @@ MIT
 
 ## TODO
 
-+ [ ] テストコード追加
++ [x] Add testing codes

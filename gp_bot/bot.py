@@ -9,7 +9,8 @@ from typing import Dict, List, Optional, cast
 
 import numpy as np
 import yaml
-from twitter import Api
+from twitter import Api as TwitterAPI
+from twitter.models import Status
 
 from gp_bot import create_logger
 from gp_bot.config import (LAST_MENTION_ID_PATH, MAX_N_MENTIONS, MENTION_MINUTE, N_GENERATE_TEXT, NORMAL_MINUTE,
@@ -21,7 +22,7 @@ class GomiPeopleBot(object):
     """ｺﾞﾐﾋﾟｰﾌﾟﾙBotクラス."""
 
     def __init__(self, consumer_key: str, consumer_secret: str, access_token_key: str, access_token_secret: str,
-                 model_filepath: str, cuda: bool, logger: Optional[Logger] = None):
+                 model_filepath: str, cuda: bool = False, logger: Optional[Logger] = None):
         """コンストラクタ.
 
         Parameters
@@ -36,14 +37,14 @@ class GomiPeopleBot(object):
             TwitterのAccess Token Secret
         model_filepath : str
             モデルファイルパス
-        cuda : bool
-            CUDAの利用するか否かのフラグ
-        logger : Optional[logging.Logger], optional
+        cuda : bool, default False
+            CUDAの利用するか否かのフラグ（デフォルト：利用しない）
+        logger : Optional[logging.Logger], default None
             ロガー
 
         """
-        self.api = Api(consumer_key=consumer_key, consumer_secret=consumer_secret,
-                       access_token_key=access_token_key, access_token_secret=access_token_secret)
+        self.twitter_api = TwitterAPI(consumer_key=consumer_key, consumer_secret=consumer_secret,
+                                      access_token_key=access_token_key, access_token_secret=access_token_secret)
         self.logger = logger if logger else create_logger()
         self.gp_generator = GenerateGPText(model_filepath, cuda)
         self.steady_tweets = self.load_steady_tweets()
@@ -145,24 +146,34 @@ class GomiPeopleBot(object):
         random.seed()
 
         # Botへのリプライを取得
-        statuses = self.api.GetMentions(count=100, since_id=last_mention_id)
+        statuses = self.twitter_api.GetMentions(count=100, since_id=last_mention_id)
         if len(statuses) == 0:
             self.logger.info("No reply.")
 
+            return False
+
         if last_mention_id is None and len(statuses) > 0:
+            self.logger.info("Dump latest mention ID and exit because no mention ID")
             # last_mention_idの指定がなく、リプライがある場合は最新のリプライのツイートIDを格納して終了
             # -> last_mention_idの指定がない場合、過去にリプライしたものに対しても返答してしまうため
             self.dump_last_mention_id(statuses[0].id_str)
 
-            return True
+            return False
 
-        # リプライをランダムに抽出
-        for target in random.sample(statuses, MAX_N_MENTIONS):
+        # ユーザIDとツイートIDのマッピングを記憶する
+        # -> 同じユーザから複数ツイートあっても1ツイート分しか記憶しない
+        tweet_id_map: Dict[str, str] = {st.user.screen_name: st.id_str for st in statuses}
+
+        targets = list(tweet_id_map.items())
+        if len(targets) > MAX_N_MENTIONS:
+            # MAX_N_MENTIONSで指定した数よりリプライが多ければリプライをランダムに抽出
+            targets = random.sample(targets, MAX_N_MENTIONS)
+        for screen_name, id_str in targets:
             # リプライ対象のツイートごとにテキストを生成してツイート
-            text_prefix = f"@{target.user.screen_name} "
+            text_prefix = f"@{screen_name} "
             text = self.generate_text(TWEET_MAX_LENGTH - len(text_prefix))
 
-            res = self.post(text_prefix + text, target.id_str)
+            res = self.post(text_prefix + text, id_str)
 
         # 最後のリプライ（ツイート）IDを記憶
         self.dump_last_mention_id(res)
@@ -215,7 +226,7 @@ class GomiPeopleBot(object):
         if text is None or len(text) == 0:
             raise ValueError("Tweet is empty.")
 
-        result = self.api.PostUpdate(status=text, in_reply_to_status_id=mention_id)
+        result = self.twitter_api.PostUpdate(status=text, in_reply_to_status_id=mention_id)
 
         return cast(str, result.id_str)
 

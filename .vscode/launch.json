@@ -31,7 +31,11 @@
             "request": "launch",
             "program": "${workspaceRoot}/gp_bot/api.py",
             "console": "integratedTerminal",
-            "args": []
+            "args": [],
+            "cwd": "${workspaceRoot}",
+            "env": {
+                "PYTHONPATH": "${workspaceRoot}"
+            },
         }
     ]
 }
