@@ -6,7 +6,7 @@
 /.vscode
 /.mypy_cache
 /Dockerfile
+/Dockerfile.dev
 /corpus
-/last_mention_id.json
 /result
 **/__pycache__

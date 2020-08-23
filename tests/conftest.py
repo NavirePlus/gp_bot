@@ -4,10 +4,6 @@ import pytest
 from twitter.models import Status
 
 
-LAST_MENTION_ID_PATH = "/tmp/last_mention_id.json"
-os.environ["LAST_MENTION_ID_PATH"] = LAST_MENTION_ID_PATH
-
-
 @pytest.fixture(scope="function")
 def gp_bot():
     from gp_bot.bot import GomiPeopleBot
@@ -20,14 +16,6 @@ def gp_bot():
 
     return GomiPeopleBot(consumer_key, consumer_secret, access_token_key, access_token_secret,
                          "/workspaces/gp_bot/result/model.pth")
-
-
-@pytest.fixture(scope="function", autouse=True)
-def clean():
-    yield
-
-    if os.path.exists(LAST_MENTION_ID_PATH):
-        os.remove(LAST_MENTION_ID_PATH)
 
 
 def mocked_post_tweet(status: str, in_reply_to_status_id: str) -> Status:

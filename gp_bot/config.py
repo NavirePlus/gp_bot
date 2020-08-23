@@ -17,9 +17,6 @@ DEFAULT_PARAMS = {
     "SAVE": "./result/model.pth"
 }
 
-# 最後にリプライしたツイートIDの保存先（デフォルト：./last_mention_id.json）
-LAST_MENTION_ID_PATH = os.environ.get("LAST_MENTION_ID_PATH", "./last_mention_id.json")
-
 # 最大リプライ数（デフォルト：3）
 MAX_N_MENTIONS = int(os.environ.get("MAX_N_MENTIONS", "3"))
 

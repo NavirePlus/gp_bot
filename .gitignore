@@ -112,7 +112,8 @@ dmypy.json
 # Custom
 /.env
 /.venv
-/last_mention_id.json
 /result/*
+.python_packages
+.telemetry
 
 !.gitkeep

@@ -1,5 +1,6 @@
 """ｺﾞﾐﾋﾟｰﾌﾟﾙBotとしての処理定義."""
 import json
+import logging
 import os
 import random
 import traceback
@@ -12,9 +13,7 @@ import yaml
 from twitter import Api as TwitterAPI
 from twitter.models import Status
 
-from gp_bot import create_logger
-from gp_bot.config import (LAST_MENTION_ID_PATH, MAX_N_MENTIONS, MENTION_MINUTE, N_GENERATE_TEXT, NORMAL_MINUTE,
-                           TWEET_MAX_LENGTH)
+from gp_bot.config import MAX_N_MENTIONS, MENTION_MINUTE, N_GENERATE_TEXT, NORMAL_MINUTE, TWEET_MAX_LENGTH
 from gp_bot.generate import GenerateGPText
 
 
@@ -45,39 +44,49 @@ class GomiPeopleBot(object):
         """
         self.twitter_api = TwitterAPI(consumer_key=consumer_key, consumer_secret=consumer_secret,
                                       access_token_key=access_token_key, access_token_secret=access_token_secret)
-        self.logger = logger if logger else create_logger()
+        self.logger = logger if logger else self.create_logger()
         self.gp_generator = GenerateGPText(model_filepath, cuda)
         self.steady_tweets = self.load_steady_tweets()
 
-    def load_last_mention_id(self) -> Optional[str]:
-        """最後にリプライしたツイートのIDの読み込み.
+    def create_logger(self) -> Logger:
+        """ロガーの生成.
+
+        Returns
+        -------
+        Logger
+            ロガー
+
+        """
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("[%(asctime)s][%(levelname)s] in %(filename)s: %(message)s")
+        handler.setFormatter(formatter)
+
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+
+        return logger
+
+    def get_latest_status_id(self) -> Optional[str]:
+        """自身の直近の返信ツイートのIDを取得する.
 
         Returns
         -------
         Optional[str]
-            最後にリプライしたツイートのID
+            自身の直近の返信ツイートのID
 
         """
-        if not os.path.exists(LAST_MENTION_ID_PATH):
-            # ファイルが存在しない場合はNoneを返す
+        statuses = self.twitter_api.GetUserTimeline(count=20)
+        if len(statuses) == 0:
             return None
 
-        with open(LAST_MENTION_ID_PATH) as fp:
-            mention_id = json.load(fp)
-
-        return cast(str, mention_id)
-
-    def dump_last_mention_id(self, mention_id: str) -> None:
-        """最後にリプライしたツイートのIDの出力.
-
-        Parameters
-        ----------
-        mention_id : str
-            最後にリプライしたツイートのID
-
-        """
-        with open(LAST_MENTION_ID_PATH, 'w') as fp:
-            json.dump(mention_id, fp)
+        for status in statuses:
+            # 返信しているツイートを見つけたらそのIDを返す
+            if status.in_reply_to_status_id is not None:
+                return cast(str, status.id_str)
+        else:
+            # 返信しているツイートがなければ最新の自身のツイートIDを返す
+            return cast(str, statuses[0].id_str)
 
     def load_steady_tweets(self, path: str = "./steady_tweets.yml") -> List[Dict[str, str]]:
         """定常ツイートを読み込む.
@@ -120,14 +129,14 @@ class GomiPeopleBot(object):
 
         return cast(str, texts[np.argmax(scores)])
 
-    def do_mentions(self, now: datetime, last_mention_id: Optional[str]) -> bool:
+    def do_mentions(self, now: datetime, latest_status_id: Optional[str]) -> bool:
         """ユーザへのリプライを行う.
 
         Parameters
         ----------
         now : datetime.datetime
             現在日時
-        last_mention_id : Optional[str]
+        latest_status_id : Optional[str]
             最後にリプライしたツイートのID
 
         Returns
@@ -146,17 +155,14 @@ class GomiPeopleBot(object):
         random.seed()
 
         # Botへのリプライを取得
-        statuses = self.twitter_api.GetMentions(count=100, since_id=last_mention_id)
+        statuses = self.twitter_api.GetMentions(count=100, since_id=latest_status_id)
         if len(statuses) == 0:
             self.logger.info("No reply.")
 
             return False
 
-        if last_mention_id is None and len(statuses) > 0:
-            self.logger.info("Dump latest mention ID and exit because no mention ID")
-            # last_mention_idの指定がなく、リプライがある場合は最新のリプライのツイートIDを格納して終了
-            # -> last_mention_idの指定がない場合、過去にリプライしたものに対しても返答してしまうため
-            self.dump_last_mention_id(statuses[0].id_str)
+        if latest_status_id is None and len(statuses) > 0:
+            self.logger.info("No latest status ID")
 
             return False
 
@@ -173,10 +179,7 @@ class GomiPeopleBot(object):
             text_prefix = f"@{screen_name} "
             text = self.generate_text(TWEET_MAX_LENGTH - len(text_prefix))
 
-            res = self.post(text_prefix + text, id_str)
-
-        # 最後のリプライ（ツイート）IDを記憶
-        self.dump_last_mention_id(res)
+            self.post(text_prefix + text, id_str)
 
         return True
 
@@ -257,8 +260,8 @@ class GomiPeopleBot(object):
                 return
 
             # リプライ
-            last_mention_id = self.load_last_mention_id()
-            if self.do_mentions(now, last_mention_id):
+            latest_status_id = self.get_latest_status_id()
+            if self.do_mentions(now, latest_status_id):
                 # リプライした場合は終了
                 self.logger.info("Successfully replies.")
                 return

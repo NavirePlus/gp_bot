@@ -1,23 +1,25 @@
-"""None."""
+import datetime
 import logging
-from logging import Logger
+import os
+
+import azure.functions as func
+
+from gp_bot.bot import GomiPeopleBot
 
 
-def create_logger() -> Logger:
-    """ロガーの生成.
+def main(mytimer: func.TimerRequest) -> None:
+    utc_timestamp = datetime.datetime.utcnow().replace(
+        tzinfo=datetime.timezone.utc).isoformat()
 
-    Returns
-    -------
-    Logger
-        ロガー
+    if mytimer.past_due:
+        logging.info('The timer is past due!')
 
-    """
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter("[%(asctime)s][%(levelname)s] in %(filename)s: %(message)s")
-    handler.setFormatter(formatter)
+    logging.info('Python timer trigger function ran at %s', utc_timestamp)
 
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    logger.addHandler(handler)
-
-    return logger
+    consumer_key = os.environ.get("TWITTER_CONSUMER_KEY")
+    consumer_secret = os.environ.get("TWITTER_CONSUMER_SECRET")
+    access_token_key = os.environ.get("TWITTER_ACCESS_TOKEN_KEY")
+    access_token_secret = os.environ.get("TWITTER_ACCESS_TOKEN_SECRET")
+    bot = GomiPeopleBot(consumer_key, consumer_secret, access_token_key, access_token_secret,
+                        "./result/model.pth")
+    bot.main(force=True)

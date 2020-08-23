@@ -10,26 +10,24 @@ from twitter.models import Status
 from gp_bot.bot import GomiPeopleBot
 from gp_bot.config import MAX_N_MENTIONS
 
-from tests.conftest import LAST_MENTION_ID_PATH, mocked_post_tweet
-from tests.data.tweets import MENTIONED_TWEETS
+from tests.conftest import mocked_post_tweet
+from tests.data.tweets import MENTIONED_TWEETS, SELF_TWEETS
 
 
 class Test_GomiPeopleBot(object):
 
-    def test_load_last_mention_id(self, gp_bot: GomiPeopleBot):
-        # ファイルが存在しない場合
-        assert gp_bot.load_last_mention_id() is None
+    def test_get_latest_status_id(self, mocker: MockerFixture, gp_bot: GomiPeopleBot):
+        # 自身のツイートが存在しない場合
+        mocker.patch.object(TwitterAPI, "GetUserTimeline", return_value=[])
+        assert gp_bot.get_latest_status_id() is None
 
-        # ファイルを作成
-        with open(LAST_MENTION_ID_PATH, "w")as fp:
-            json.dump("TEST_MENTION_ID", fp)
+        # 自身のツイートが存在するが、リプライツイートがない場合
+        mocker.patch.object(TwitterAPI, "GetUserTimeline", return_value=SELF_TWEETS[:2])
+        assert gp_bot.get_latest_status_id() == "9999_1"
 
-        # ファイルが存在する場合
-        assert gp_bot.load_last_mention_id() == "TEST_MENTION_ID"
-
-    def test_dump_last_mention_id(self, gp_bot: GomiPeopleBot):
-        gp_bot.dump_last_mention_id("TEST_MENTION_ID")
-        assert gp_bot.load_last_mention_id() == "TEST_MENTION_ID"
+        # 自身のツイートが存在し、リプライツイートがある場合
+        mocker.patch.object(TwitterAPI, "GetUserTimeline", return_value=SELF_TWEETS)
+        assert gp_bot.get_latest_status_id() == "9999_3"
 
     def test_load_steady_tweets(self, gp_bot: GomiPeopleBot):
         tweets = gp_bot.load_steady_tweets("/workspaces/gp_bot/steady_tweets.yml")
@@ -53,14 +51,11 @@ class Test_GomiPeopleBot(object):
         # last_mention_idがNoneかつメンションがある場合
         mocker.patch.object(TwitterAPI, "GetMentions", return_value=MENTIONED_TWEETS)
         assert gp_bot.do_mentions(datetime(2020, 1, 1, 0, 20, 0), None) == False
-        # 格納されたツイートIDが正しいか確認
-        assert gp_bot.load_last_mention_id() == "0001_1"
 
         # 返信を行う場合で受けたメンションがMAX_N_MENTIONSで指定された件数以下の場合
         mocker.patch.object(TwitterAPI, "PostUpdate", side_effect=mocked_post_tweet)
         mocker.patch.object(TwitterAPI, "GetMentions", return_value=MENTIONED_TWEETS[:4])
         assert gp_bot.do_mentions(datetime(2020, 1, 1, 0, 20, 0), "TEST_MENTION_ID") == True
-        assert gp_bot.load_last_mention_id() == "9999_3"
 
         # 返信を行う場合で受けたメンションがMAX_N_MENTIONSで指定された件数より多い場合
         posted_mock = mocker.patch.object(TwitterAPI, "PostUpdate", side_effect=mocked_post_tweet)

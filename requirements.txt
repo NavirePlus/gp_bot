@@ -1,0 +1,6 @@
+azure-functions
+PyYAML ~= 5.3.0
+numpy ~= 1.18.0
+python-twitter ~= 3.5.0
+-f https://download.pytorch.org/whl/torch_stable.html
+torch == 1.4.0+cpu

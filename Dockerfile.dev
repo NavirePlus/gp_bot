@@ -2,15 +2,27 @@ FROM python:3.7.9-slim-buster
 
 ENV TZ=Asia/Tokyo
 
-COPY . /tmp
-
-WORKDIR /tmp
-
+# install Azure Functions Core Tools
 RUN set -ex \
     && apt-get update \
-    && apt-get install -y --no-install-recommends git curl \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        gpg \
+        libicu63 \
+        lsb-release \
+    && curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg \
+    && mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg \
+    && echo "deb [arch=amd64] https://packages.microsoft.com/debian/$(lsb_release -rs | cut -d'.' -f 1)/prod $(lsb_release -cs) main" \
+        > /etc/apt/sources.list.d/dotnetdev.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends azure-functions-core-tools-3 \
+    && apt-get purge -y gpg lsb-release \
+    && rm -rf /var/cache/apt/*
+
+# install dev tools
+RUN set -ex \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends git \
     && pip install --no-cache-dir poetry==1.0.10 \
-    && poetry config virtualenvs.create false \
-    && poetry update \
-    && poetry install \
-    && rm -rf /root/.cache/* /tmp/* /var/cache/apt/*
+    && poetry config virtualenvs.in-project true \
+    && rm -rf /root/.cache/* /var/cache/apt/*

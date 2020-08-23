@@ -17,28 +17,27 @@ homepage = "https://github.com/NavirePlus"
 keywords = ["Gomi-People", "ｺﾞﾐﾋﾟｰﾌﾟﾙ"]
 
 [tool.poetry.dependencies]
-PyYAML = { version = "^5.3.*" }
-fastapi = { version = "^0.61.*" }
-numpy = { version = "^1.18.*" }
+PyYAML = { version = "5.3.*" }
+azure-functions = { version = "*" }
+numpy = { version = "1.18.*" }
 python = ">=3.7 <4.0"
-python-twitter = { version = "^3.5.*" }
-torch = { version = "^1.4.*" }
-tqdm = { version = "^4.48.*" }
-uvicorn = { version = "^0.11.*" }
+python-twitter = { version = "3.5.*" }
+torch = { version = "1.4.*" }
+tqdm = { version = "4.48.*" }
 
 [tool.poetry.dev-dependencies]
-autopep8 = { version = "^1.5.*" }
-flake8 = { version = "^3.8.*" }
-flake8-builtins = { version = "^1.5.*" }
-flake8-docstrings = { version = "^1.5.*" }
-flake8-isort = { version = "^4.0.*" }
-isort = { version = "^5.4.*" }
-mypy = { version = "^0.782.*" }
-pip-licenses = { version = "^2.3.*" }
-pytest = { version = "^6.0.*" }
-pytest-cov = { version = "^2.10.*" }
-pytest-mock = { version = "^3.3.*" }
-tox = { version = "^3.19.*" }
+autopep8 = { version = "1.5.*" }
+flake8 = { version = "3.8.*" }
+flake8-builtins = { version = "1.5.*" }
+flake8-docstrings = { version = "1.5.*" }
+flake8-isort = { version = "4.0.*" }
+isort = { version = "5.4.*" }
+mypy = { version = "0.782" }
+pip-licenses = { version = "2.3.*" }
+pytest = { version = "6.0.*" }
+pytest-cov = { version = "2.10.*" }
+pytest-mock = { version = "3.3.*" }
+tox = { version = "3.19.*" }
 
 [build-system]
 requires = ["poetry>=1.0"]

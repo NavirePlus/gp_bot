@@ -13,7 +13,3 @@ RUN set -ex \
     && poetry install --no-dev \
     && pip uninstall -y poetry \
     && rm -rf /root/.cache/*
-
-EXPOSE 80
-
-CMD ["uvicorn", "gp_bot.api:app", "--host", "0.0.0.0", "--port", "80"]
