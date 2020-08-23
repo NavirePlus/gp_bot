@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch import Tensor
 
 
-class GPLangModel(nn.Module):  # type: ignore
+class GPLangModel(nn.Module):
     """ｺﾞﾐﾋﾟｰﾌﾟﾙ言語モデルのクラス.
 
     Attributes
@@ -42,11 +42,11 @@ class GPLangModel(nn.Module):  # type: ignore
             Dropout率
 
         """
-        super(GPLangModel, self).__init__()
+        super(GPLangModel, self).__init__()  # type: ignore
 
         self.drop = nn.Dropout(dropout)
         self.encoder = nn.Embedding(n_vocab, n_input)
-        self.rnn = nn.LSTM(n_input, n_hidden, n_layers, dropout=dropout)
+        self.rnn = nn.LSTM(n_input, n_hidden, n_layers, dropout=dropout)  # type: ignore
         self.decoder = nn.Linear(n_hidden, n_vocab)
 
         self.init_weights()

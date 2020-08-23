@@ -77,7 +77,8 @@ class GenerateGPText(object):
         weights: List[float] = []
 
         # 入力ベクトルとLSTMの隠れユニットの特徴ベクトルを初期化
-        t_input = cast(Tensor, torch.tensor([[self.vocab.char2idx[BOS_SYMBOL]]]).to(self.device).type(torch.long))
+        t_input = cast(Tensor, torch.tensor([[self.vocab.char2idx[BOS_SYMBOL]]]  # type: ignore
+                                            ).to(self.device).type(torch.long))
         t_hidden = self.model.init_hidden(1)
         with torch.no_grad():
             for _ in range(max_length):
