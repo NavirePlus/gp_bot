@@ -111,7 +111,8 @@ MIT
 
 ## Special Thanks
 
-+ 今は亡き[ピングーBot](http://twitter.com/Pingu_bot)の生みの親である[くぼみ](http://twitter.com/dekobokoya)
++ [@ピングーBot](http://twitter.com/Pingu_bot)
++ [@くぼみ](http://twitter.com/dekobokoya)
 
 ## 開発手順
 
