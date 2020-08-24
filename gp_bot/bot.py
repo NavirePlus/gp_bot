@@ -4,7 +4,7 @@ import logging
 import os
 import random
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from logging import Logger
 from typing import Dict, List, Optional, cast
 
@@ -51,6 +51,7 @@ class GomiPeopleBot(object):
         self.logger = logger if logger else self.create_logger()
         self.gp_generator = GenerateGPText(model_filepath, cuda)
         self.steady_tweets = self.load_steady_tweets()
+        self.tz = timezone(timedelta(hours=+9), 'Asia/Tokyo')
 
     @staticmethod
     def create_logger() -> Logger:
@@ -160,6 +161,7 @@ class GomiPeopleBot(object):
         random.seed()
 
         # Botへのリプライを取得
+        self.logger.info(f"Latest status id: {latest_status_id}")
         statuses = self.twitter_api.GetMentions(count=100, since_id=latest_status_id)
         if len(statuses) == 0:
             self.logger.info("No reply.")
@@ -249,7 +251,7 @@ class GomiPeopleBot(object):
         """
         self.logger.info("Start tweet.")
 
-        now = datetime.now()
+        now = datetime.now().astimezone(self.tz)
 
         try:
             # 定常ツイート
