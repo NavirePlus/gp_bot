@@ -7,10 +7,16 @@ import torch.nn as nn
 from torch import Tensor
 from tqdm import tqdm
 
-from gp_bot.bot import GomiPeopleBot
-from gp_bot.config import DEFAULT_PARAMS
-from gp_bot.data import Corpus
-from gp_bot.model import GPLangModel
+try:
+    from gp_bot.bot import GomiPeopleBot
+    from gp_bot.config import DEFAULT_PARAMS
+    from gp_bot.data import Corpus
+    from gp_bot.model import GPLangModel
+except:
+    from .bot import GomiPeopleBot
+    from .config import DEFAULT_PARAMS
+    from .data import Corpus
+    from .model import GPLangModel
 
 
 class TrainGPLM(object):

@@ -5,9 +5,14 @@ from typing import List, Tuple, cast, no_type_check
 import torch
 from torch import Tensor
 
-from gp_bot.config import DEFAULT_PARAMS
-from gp_bot.data import BOS_SYMBOL, EOS_SYMBOL, Dictionary
-from gp_bot.model import GPLangModel
+try:
+    from gp_bot.config import DEFAULT_PARAMS
+    from gp_bot.data import BOS_SYMBOL, EOS_SYMBOL, Dictionary
+    from gp_bot.model import GPLangModel
+except:
+    from .config import DEFAULT_PARAMS
+    from .data import BOS_SYMBOL, EOS_SYMBOL, Dictionary
+    from .model import GPLangModel
 
 
 class GenerateGPText(object):

@@ -13,8 +13,12 @@ import yaml
 from twitter import Api as TwitterAPI
 from twitter.models import Status
 
-from gp_bot.config import MAX_N_MENTIONS, MENTION_MINUTE, N_GENERATE_TEXT, NORMAL_MINUTE, TWEET_MAX_LENGTH
-from gp_bot.generate import GenerateGPText
+try:
+    from gp_bot.config import MAX_N_MENTIONS, MENTION_MINUTE, N_GENERATE_TEXT, NORMAL_MINUTE, TWEET_MAX_LENGTH
+    from gp_bot.generate import GenerateGPText
+except:
+    from .config import MAX_N_MENTIONS, MENTION_MINUTE, N_GENERATE_TEXT, NORMAL_MINUTE, TWEET_MAX_LENGTH
+    from .generate import GenerateGPText
 
 
 class GomiPeopleBot(object):

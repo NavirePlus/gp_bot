@@ -4,7 +4,7 @@ import os
 
 import azure.functions as func
 
-from gp_bot.bot import GomiPeopleBot
+from ..gp_bot.bot import GomiPeopleBot
 
 
 def main(gptimer: func.TimerRequest) -> None:
