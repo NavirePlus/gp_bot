@@ -48,7 +48,8 @@ class GomiPeopleBot(object):
         self.gp_generator = GenerateGPText(model_filepath, cuda)
         self.steady_tweets = self.load_steady_tweets()
 
-    def create_logger(self) -> Logger:
+    @staticmethod
+    def create_logger() -> Logger:
         """ロガーの生成.
 
         Returns
@@ -233,13 +234,13 @@ class GomiPeopleBot(object):
 
         return cast(str, result.id_str)
 
-    def main(self, force: bool) -> None:
+    def main(self, force: bool = False) -> None:
         """main関数.
 
         Parameters
         ----------
-        force : bool
-            強制的に通常ツイートを行うかどうかのフラグ
+        force : bool, default False
+            強制的に通常ツイートを行うかどうかのフラグ（デフォルト：強制しない）
 
         """
         self.logger.info("Start tweet.")
