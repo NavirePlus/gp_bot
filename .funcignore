@@ -7,8 +7,9 @@
 /.venv
 /.vscode
 /.mypy_cache
-/Dockerfile
+/CHANGELOG.md
 /Dockerfile.dev
+/LICENSE
 /README.md
 /corpus
 /coverage.xml

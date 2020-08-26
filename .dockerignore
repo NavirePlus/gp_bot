@@ -5,7 +5,6 @@
 /.venv
 /.vscode
 /.mypy_cache
-/Dockerfile
 /Dockerfile.dev
 /corpus
 /result
