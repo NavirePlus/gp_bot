@@ -49,7 +49,9 @@ class GomiPeopleBot(object):
         self.twitter_api = TwitterAPI(consumer_key=consumer_key, consumer_secret=consumer_secret,
                                       access_token_key=access_token_key, access_token_secret=access_token_secret)
         self.logger = logger if logger else self.create_logger()
-        self.gp_generator = GenerateGPText(model_filepath, cuda)
+        self.model_filepath = model_filepath
+        self.cuda = cuda
+        self.gp_generator: Optional[GenerateGPText] = None
         self.steady_tweets = self.load_steady_tweets()
         self.tz = timezone(timedelta(hours=+9), 'Asia/Tokyo')
 
@@ -125,6 +127,9 @@ class GomiPeopleBot(object):
             生成したｺﾞﾐﾋﾟｰﾌﾟﾙテキスト
 
         """
+        if self.gp_generator is None:
+            self.gp_generator = GenerateGPText(self.model_filepath, self.cuda)
+
         texts: List[str] = []
         scores: List[float] = []
         for _ in range(N_GENERATE_TEXT):
