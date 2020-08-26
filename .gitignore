@@ -112,7 +112,6 @@ dmypy.json
 # Custom
 /.env
 /.venv
-/result/*
 .python_packages
 .telemetry
 
