@@ -7,10 +7,16 @@ import torch.nn as nn
 from torch import Tensor
 from tqdm import tqdm
 
-from gp_bot import create_logger
-from gp_bot.config import DEFAULT_PARAMS
-from gp_bot.data import Corpus
-from gp_bot.model import GPLangModel
+try:
+    from gp_bot.bot import GomiPeopleBot
+    from gp_bot.config import DEFAULT_PARAMS
+    from gp_bot.data import Corpus
+    from gp_bot.model import GPLangModel
+except:
+    from .bot import GomiPeopleBot
+    from .config import DEFAULT_PARAMS
+    from .data import Corpus
+    from .model import GPLangModel
 
 
 class TrainGPLM(object):
@@ -105,7 +111,7 @@ class TrainGPLM(object):
         self.model = GPLangModel(self.n_vocab, self.emb_size, self.n_hidden,
                                  self.n_layers, self.dropout).to(self.device)
         self.corpus.train_data = self.batchfy(self.corpus.train_data)
-        self.logger = logger if logger else create_logger()
+        self.logger = logger if logger else GomiPeopleBot.create_logger()
 
     def batchfy(self, data: Tensor) -> Tensor:
         """バッチ可能なデータに変換する.
@@ -141,7 +147,7 @@ class TrainGPLM(object):
 
         """
         with open(path, "wb") as fp:
-            torch.save(self.model, fp)  # type: ignore
+            torch.save(self.model.state_dict(), fp)  # type: ignore
 
         self.corpus.dictionary.dump(path + ".vocab")
 

@@ -120,6 +120,6 @@ class Corpus(object):
 
                     # 語彙IDのリストをTensorに変換
                     t = torch.tensor([self.dictionary.char2idx[c] for c in chars]).type(torch.int64)
-                    ids.append(cast(Tensor, t))
+                    ids.append(cast(Tensor, t))  # type: ignore
 
         return torch.cat(ids)

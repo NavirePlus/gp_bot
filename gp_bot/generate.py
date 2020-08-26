@@ -5,8 +5,14 @@ from typing import List, Tuple, cast, no_type_check
 import torch
 from torch import Tensor
 
-from gp_bot.data import BOS_SYMBOL, EOS_SYMBOL, Dictionary
-from gp_bot.model import GPLangModel
+try:
+    from gp_bot.config import DEFAULT_PARAMS
+    from gp_bot.data import BOS_SYMBOL, EOS_SYMBOL, Dictionary
+    from gp_bot.model import GPLangModel
+except:
+    from .config import DEFAULT_PARAMS
+    from .data import BOS_SYMBOL, EOS_SYMBOL, Dictionary
+    from .model import GPLangModel
 
 
 class GenerateGPText(object):
@@ -35,13 +41,13 @@ class GenerateGPText(object):
 
         """
         self.device = torch.device("cuda" if cuda else "cpu")
-        self.model = self.load_model(model_file)
-        self.model.eval()
 
         self.vocab = Dictionary()
         self.vocab.load(model_file + ".vocab")
 
-    @no_type_check
+        self.model = self.load_model(model_file)
+        self.model.eval()
+
     def load_model(self, path: str) -> GPLangModel:
         """モデルファイルの読み込み.
 
@@ -56,8 +62,13 @@ class GenerateGPText(object):
             読み込んだモデル
 
         """
+        model = GPLangModel(n_vocab=len(self.vocab), n_input=DEFAULT_PARAMS["EMB_SIZE"],
+                            n_hidden=DEFAULT_PARAMS["N_HIDDEN"], n_layers=DEFAULT_PARAMS["N_LAYERS"],
+                            dropout=DEFAULT_PARAMS["DROPOUT"])
         with open(path, "rb") as fp:
-            return torch.load(fp).to(self.device)
+            model.load_state_dict(torch.load(fp))
+
+        return model
 
     def __call__(self, max_length: int) -> Tuple[str, float, float]:
         """テキストの生成.
@@ -77,7 +88,8 @@ class GenerateGPText(object):
         weights: List[float] = []
 
         # 入力ベクトルとLSTMの隠れユニットの特徴ベクトルを初期化
-        t_input = cast(Tensor, torch.tensor([[self.vocab.char2idx[BOS_SYMBOL]]]).to(self.device).type(torch.long))
+        t_input = cast(Tensor, torch.tensor([[self.vocab.char2idx[BOS_SYMBOL]]]  # type: ignore
+                                            ).to(self.device).type(torch.long))
         t_hidden = self.model.init_hidden(1)
         with torch.no_grad():
             for _ in range(max_length):
