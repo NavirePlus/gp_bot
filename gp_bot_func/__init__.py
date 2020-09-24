@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import time
 
 import azure.functions as func
 
@@ -14,4 +15,8 @@ def main(gptimer: func.TimerRequest) -> None:
     access_token_secret = os.environ.get("TWITTER_ACCESS_TOKEN_SECRET")
     bot = GomiPeopleBot(consumer_key, consumer_secret, access_token_key, access_token_secret,
                         "./result/model.pth")
+
+    # Azure Functions側の時刻同期のズレを考慮し、5秒遅らせる
+    time.sleep(5)
+
     bot.main()
