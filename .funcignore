@@ -8,7 +8,6 @@
 /.vscode
 /.mypy_cache
 /CHANGELOG.md
-/Dockerfile.dev
 /LICENSE
 /README.md
 /corpus
@@ -18,4 +17,5 @@
 /pyproject.toml
 /tests
 /setup.cfg
+/result/latest_model.pth
 **/__pycache__

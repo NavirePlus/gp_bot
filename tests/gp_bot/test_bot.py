@@ -1,11 +1,8 @@
-import json
-import os
 from datetime import datetime
 
 import pytest
-from pytest_mock import MockerFixture, mocker
+from pytest_mock import MockerFixture
 from twitter import Api as TwitterAPI
-from twitter.models import Status
 
 from gp_bot.bot import GomiPeopleBot
 from gp_bot.config import MAX_N_MENTIONS
@@ -30,7 +27,7 @@ class Test_GomiPeopleBot(object):
         assert gp_bot.get_latest_status_id() == "9999_3"
 
     def test_load_steady_tweets(self, gp_bot: GomiPeopleBot):
-        tweets = gp_bot.load_steady_tweets("/workspaces/gp_bot/steady_tweets.yml")
+        tweets = gp_bot.load_steady_tweets("./steady_tweets.yml")
 
         # 1件だけ確認する
         assert {"type": "%H:%M", "dt": "03:30", "text": "ｻﾝｼﾞﾊﾝ!!"} in tweets

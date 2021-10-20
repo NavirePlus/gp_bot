@@ -1,22 +1,22 @@
 """ｺﾞﾐﾋﾟｰﾌﾟﾙ言語モデルの学習処理の定義."""
+import time
 from logging import Logger
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
 from torch import Tensor
-from tqdm import tqdm
 
 try:
     from gp_bot.bot import GomiPeopleBot
     from gp_bot.config import DEFAULT_PARAMS
     from gp_bot.data import Corpus
-    from gp_bot.model import GPLangModel
+    from gp_bot.model import GPLangModel, TransformerModel
 except:
     from .bot import GomiPeopleBot
     from .config import DEFAULT_PARAMS
     from .data import Corpus
-    from .model import GPLangModel
+    from .model import GPLangModel, TransformerModel
 
 
 class TrainGPLM(object):
@@ -24,81 +24,83 @@ class TrainGPLM(object):
 
     Attributes
     ----------
-    all_total_loss : List[float]
+    all_total_loss: List[float]
         全epochのLoss
-    batch_size : int
+    batch_size: int
         バッチサイズ
-    bptt : int
+    bptt: int
         Back-Propagation Through Time（シーケンスサイズ）
-    clip : float
+    clip: float
         勾配のNormのClipping閾値
-    corpus : :obj:`Corpus`
+    corpus: :obj:`Corpus`
         コーパス情報
-    criterion : torch.nn.CrossEntropyLoss
+    criterion: torch.nn.CrossEntropyLoss
         Loss関数
-    device : torch.device
+    device: torch.device
         CPU・GPUのデバイス情報
-    dropout : float
+    dropout: float
         Dropout率
-    emb_size : int
+    emb_size: int
         入力ベクトルの次元数
-    epochs : int
+    epochs: int
         Epoch数
-    logger : logging.Logger
+    logger: logging.Logger
         ロガー
-    lr : int
+    lr: int
         学習率
-    model : :obj:`GPLangModel`
+    model: :obj:`GPLangModel`
         ｺﾞﾐﾋﾟｰﾌﾟﾙ言語モデル
-    n_hidden : int
+    n_head: int
+        Transformerのヘッド数
+    n_hidden: int
         LSTMの隠れユニットの次元数
-    n_layers : int
+    n_layers: int
         Reccurentレイヤー数
-    n_vocab : int
+    n_vocab: int
         語彙数
 
     """
 
     def __init__(self, batch_size: int, bptt: int, clip: float, corpus: Corpus, dropout: float, emb_size: int,
-                 epochs: int, lr: int, n_hidden: int, n_layers: int,
+                 epochs: int, lr: int, n_head: int, n_hidden: int, n_layers: int,
                  cuda: bool = False, logger: Optional[Logger] = None) -> None:
         """コンストラクタ.
 
         Parameters
         ----------
-        batch_size : int
+        batch_size: int
             バッチサイズ
-        bptt : int
+        bptt: int
             Back-Propagation Through Time（シーケンスサイズ）
-        clip : float
+        clip: float
             勾配のNormのClipping閾値
-        corpus : :obj:`Corpus`
+        corpus: :obj:`Corpus`
             コーパス情報
-        dropout : float
+        dropout: float
             Dropout率
-        emb_size : int
+        emb_size: int
             入力ベクトルの次元数
-        epochs : int
+        epochs: int
             Epoch数
-        lr : int
+        lr: int
             学習率
-        n_hidden : int
+        n_head: int
+            Transformerのヘッド数
+        n_hidden: int
             LSTMの隠れユニットの次元数
-        n_layers : int
+        n_layers: int
             Reccurentレイヤー数
-        cuda : bool, optional
+        cuda: bool, optional
             GPUを利用するか否かのフラグ（デフォルト：利用しない）
-        logging : logging.Logger, optional
+        logging: logging.Logger, optional
             ロガー
-
         """
-        self.criterion = nn.CrossEntropyLoss()
-
         self.batch_size = batch_size
         self.bptt = bptt
         self.clip = clip
         self.corpus = corpus
         self.emb_size = emb_size
+        self.n_head = n_head
         self.epochs = epochs
         self.dropout = dropout
         self.lr = lr
@@ -106,11 +108,7 @@ class TrainGPLM(object):
         self.n_layers = n_layers
         self.n_vocab = len(corpus.dictionary)
 
-        self.all_total_loss: List[float] = []
         self.device = torch.device("cuda" if cuda else "cpu")
-        self.model = GPLangModel(self.n_vocab, self.emb_size, self.n_hidden,
-                                 self.n_layers, self.dropout).to(self.device)
-        self.corpus.train_data = self.batchfy(self.corpus.train_data)
         self.logger = logger if logger else GomiPeopleBot.create_logger()
 
     def batchfy(self, data: Tensor) -> Tensor:
@@ -133,7 +131,7 @@ class TrainGPLM(object):
 
         return data.to(self.device)
 
-    def dump(self, path: str) -> None:
+    def dump(self, model: TransformerModel, model_dir: str, model_file: str) -> None:
         """ｺﾞﾐﾋﾟｰﾌﾟﾙ言語モデルと語彙情報を出力する.
 
         Parameters
@@ -146,10 +144,11 @@ class TrainGPLM(object):
         * 語彙情報の出力ファイルはモデルファイルに .vocab を付加したものになる
 
         """
-        with open(path, "wb") as fp:
-            torch.save(self.model.state_dict(), fp)  # type: ignore
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir, exist_ok=True)
 
-        self.corpus.dictionary.dump(path + ".vocab")
+        with open(os.path.join(model_dir, model_file), "wb") as fp:
+            torch.save(model, fp)  # type: ignore
 
     def get_batch(self, source: Tensor, i: int) -> Tuple[Tensor, Tensor]:
         """指定したindexのバッチデータを取得する.
@@ -187,55 +186,75 @@ class TrainGPLM(object):
             新しいLSTMの隠れユニット
 
         """
-        return tuple(v.detach() for v in h)
+        if isinstance(h, Tensor):
+            return h.detach()
+        else:
+            return tuple(self.repackage_hidden(v) for v in h)
 
-    def __call__(self, save: Optional[str] = None) -> None:
+    def __call__(self, corpus: Corpus, save_dir: str) -> None:
         """学習開始する.
 
         Parameters
         ----------
-        save : Optional[str], optional
+        save: str
             学習したモデルの出力先
-
         """
-        self.logger.info(f"TrainData: {self.corpus.train_data.size(0)}, Vocabulary: {len(self.corpus.dictionary)}")
-        for epoch in tqdm(range(1, self.epochs + 1)):
-            self.model.train()
+        self.logger.info(f"TrainData: {corpus.train_data.size(0)}, Vocabulary: {len(corpus.dictionary)}")
+        train_data = self.batchfy(corpus.train_data)
+
+        model = GPLangModel(self.n_vocab, self.emb_size, self.n_hidden, self.n_layers, self.dropout)
+        model.to(self.device)
+
+        criterion = nn.NLLLoss()
+
+        best_train_loss = -1.0
+        for epoch in range(1, self.epochs + 1):
+            start_time = time.time()
+            model.train()
+
+            hidden = model.init_hidden(self.batch_size)
 
             total_loss = 0.0
-            t_hidden = self.model.init_hidden(self.batch_size)
-            for batch, i in enumerate(range(0, self.corpus.train_data.size(0) - 1, self.bptt)):
-                data, targets = self.get_batch(self.corpus.train_data, i)
-                self.model.zero_grad()
+            for batch, i in enumerate(range(0, train_data.size(0) - 1, self.bptt)):
+                data, targets = self.get_batch(train_data, i)
+                model.zero_grad()
 
-                t_hidden = self.repackage_hidden(t_hidden)
-                res: Tuple[Tensor, Tuple[Tensor, ...]] = self.model(data, t_hidden)
-                t_output = res[0]
-                t_hidden = res[1]
+                hidden = self.repackage_hidden(hidden)
+                output, hidden = model(data, hidden)
 
-                loss = self.criterion(t_output.view(-1, self.n_vocab), targets)
+                loss = criterion(output, targets)
                 loss.backward()
 
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip)  # type: ignore
-                for p in self.model.parameters():
-                    if p.grad is not None:
-                        # https://github.com/pytorch/pytorch/issues/32824
-                        p.data.add_(-self.lr, p.grad.data)  # type: ignore
+                torch.nn.utils.clip_grad_norm_(model.parameters(), self.clip)
+                for p in model.parameters():
+                    p.data.add_(p.grad, alpha=-self.lr)
 
                 total_loss += loss.item()
 
-            self.all_total_loss.append(total_loss)
+            print("-" * 89)
+            print("| end of epoch {:3d} | time: {:5.2f}s | train loss {:5.2f}".format(
+                epoch, (time.time() - start_time), total_loss
+            ))
 
-        if save:
-            self.dump(save)
+            if best_train_loss < 0.0 or total_loss < best_train_loss:
+                best_train_loss = total_loss
+                print("*** best train loss is updated")
+                self.dump(model, save_dir, "best_model.pth")
+
+            print("-" * 89)
+
+        self.dump(model, save_dir, "latest_model.pth")
+        corpus.dictionary.dump(os.path.join(save_dir, "latest_model.pth.vocab"))
 
 
 if __name__ == "__main__":
     import glob
     import os
+    import random
     from argparse import ArgumentParser
 
-    torch.manual_seed(0)  # type: ignore
+    random.seed(DEFAULT_PARAMS["RANDOM_SEED"])
+    torch.manual_seed(DEFAULT_PARAMS["RANDOM_SEED"])  # type: ignore
 
     parser = ArgumentParser(description="ｺﾞﾐﾋﾟｰﾌﾟﾙ言語モデルの学習")
     parser.add_argument("--batch_size", help="バッチサイズ", type=int, default=DEFAULT_PARAMS["BATCH_SIZE"])
@@ -248,15 +267,15 @@ if __name__ == "__main__":
     parser.add_argument("--emb_size", help="入力ベクトルの次元数", type=int, default=DEFAULT_PARAMS["EMB_SIZE"])
     parser.add_argument("--epochs", help="Epoch数", type=int, default=DEFAULT_PARAMS["EPOCHS"])
     parser.add_argument("--lr", help="学習率", type=int, default=DEFAULT_PARAMS["LR"])
+    parser.add_argument("--n_head", help="Transformerのヘッド数", type=int, default=DEFAULT_PARAMS["N_HEAD"])
     parser.add_argument("--n_hidden", help="LSTMの隠れユニットの次元数", type=int, default=DEFAULT_PARAMS["N_HIDDEN"])
     parser.add_argument("--n_layers", help="Reccurentレイヤー数", type=int, default=DEFAULT_PARAMS["N_LAYERS"])
-    parser.add_argument("--save", help="保存するモデルのファイルパス", type=str, default=DEFAULT_PARAMS["SAVE"])
+    parser.add_argument("--save_dir", help="保存するモデルのディレクトリパス", type=str, default=DEFAULT_PARAMS["SAVE_DIR"])
     args = parser.parse_args()
 
     corpus_files = glob.glob(os.path.join(args.corpus, "*.txt"))
     corpus = Corpus(corpus_files)
 
     train = TrainGPLM(args.batch_size, args.bptt, args.clip, corpus, args.dropout, args.emb_size, args.epochs,
-                      args.lr, args.n_hidden, args.n_layers, args.cuda)
-    train(args.save)
-    print(train.all_total_loss)
+                      args.lr, args.n_head, args.n_hidden, args.n_layers, args.cuda)
+    train(corpus, args.save_dir)

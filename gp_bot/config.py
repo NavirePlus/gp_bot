@@ -12,9 +12,11 @@ DEFAULT_PARAMS = {
     "EMB_SIZE": 80,
     "EPOCHS": 80,
     "LR": 20,
+    "N_HEAD": 2,
     "N_HIDDEN": 80,
     "N_LAYERS": 2,
-    "SAVE": "./result/model.pth"
+    "RANDOM_SEED": 0,
+    "SAVE_DIR": "./result/"
 }
 
 # 最大リプライ数（デフォルト：3）

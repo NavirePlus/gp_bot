@@ -2,6 +2,7 @@
 from typing import Optional, Tuple, no_type_check
 
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import Tensor
 
 
@@ -44,6 +45,10 @@ class GPLangModel(nn.Module):
         """
         super(GPLangModel, self).__init__()  # type: ignore
 
+        self.n_vocab = n_vocab
+        self.n_hidden = n_hidden
+        self.n_layers = n_layers
+
         self.drop = nn.Dropout(dropout)
         self.encoder = nn.Embedding(n_vocab, n_input)
         self.rnn = nn.LSTM(n_input, n_hidden, n_layers, dropout=dropout)  # type: ignore
@@ -51,15 +56,12 @@ class GPLangModel(nn.Module):
 
         self.init_weights()
 
-        self.n_hidden = n_hidden
-        self.n_layers = n_layers
-
     def init_weights(self) -> None:
         """各層の重みを初期化する."""
         initrange = 0.1
-        self.encoder.weight.data.uniform_(-initrange, initrange)
-        self.decoder.bias.data.zero_()
-        self.decoder.weight.data.uniform_(-initrange, initrange)
+        nn.init.uniform_(self.encoder.weight, -initrange, initrange)
+        nn.init.zeros_(self.decoder.weight)
+        nn.init.uniform_(self.decoder.weight, -initrange, initrange)
 
     @no_type_check
     def forward(self, t_input: Tensor, t_hidden: Optional[Tuple[Tensor, Tensor]]) \
@@ -80,11 +82,12 @@ class GPLangModel(nn.Module):
 
         """
         emb = self.drop(self.encoder(t_input))
-        output, t_hidden = self.rnn(emb, t_hidden)
+        output, hidden = self.rnn(emb, t_hidden)
         output = self.drop(output)
         decoded = self.decoder(output)
+        decoded = decoded.view(-1, self.n_vocab)
 
-        return decoded, t_hidden
+        return F.log_softmax(decoded, dim=1), hidden
 
     def init_hidden(self, batch_size: int) -> Tuple[Tensor, ...]:
         """隠れユニットの特徴ベクトルを初期化する.

@@ -15,7 +15,7 @@ def gp_bot():
     access_token_secret = os.environ.get("TWITTER_ACCESS_TOKEN_SECRET") + "_HOGE"
 
     return GomiPeopleBot(consumer_key, consumer_secret, access_token_key, access_token_secret,
-                         "/workspaces/gp_bot/result/model.pth")
+                         "./result/")
 
 
 def mocked_post_tweet(status: str, in_reply_to_status_id: str) -> Status:

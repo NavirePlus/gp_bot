@@ -10,7 +10,9 @@
 		"**/.venv": true,
 		"**/.DS_Store": true,
 		"**/__pycache__": true,
-		"**/CVS": true
+		"**/CVS": true,
+		"**/.coverage": true,
+		"**/coverage.xml": true
 	},
 	"files.watcherExclude": {
 		"**/.git/objects/**": true,
@@ -19,6 +21,7 @@
 		"**/.venv/**": true,
 		"**/__pycache__/**": true
 	},
+	"python.analysis.autoImportCompletions": false,
 	"python.formatting.provider": "autopep8",
 	"python.linting.flake8Enabled": true,
 	"python.linting.mypyEnabled": true,
@@ -29,7 +32,6 @@
 	"python.testing.pytestArgs": [
 		"tests"
 	],
-	"python.testing.nosetestsEnabled": false,
 	"python.testing.pytestEnabled": true,
 	"azureFunctions.deploySubpath": ".",
 	"azureFunctions.scmDoBuildDuringDeployment": true,

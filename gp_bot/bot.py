@@ -1,5 +1,4 @@
 """ｺﾞﾐﾋﾟｰﾌﾟﾙBotとしての処理定義."""
-import json
 import logging
 import os
 import random
@@ -84,7 +83,7 @@ class GomiPeopleBot(object):
             自身の直近の返信ツイートのID
 
         """
-        statuses = self.twitter_api.GetUserTimeline(count=20)
+        statuses: List[Status] = self.twitter_api.GetUserTimeline(count=20)
         if len(statuses) == 0:
             return None
 
@@ -128,7 +127,7 @@ class GomiPeopleBot(object):
 
         """
         if self.gp_generator is None:
-            self.gp_generator = GenerateGPText(self.model_filepath, self.cuda)
+            self.gp_generator = GenerateGPText(1.0, self.model_filepath, self.cuda)
 
         texts: List[str] = []
         scores: List[float] = []
@@ -167,7 +166,7 @@ class GomiPeopleBot(object):
 
         # Botへのリプライを取得
         self.logger.info(f"Latest status id: {latest_status_id}")
-        statuses = self.twitter_api.GetMentions(count=100, since_id=latest_status_id)
+        statuses: List[Status] = self.twitter_api.GetMentions(count=100, since_id=latest_status_id)
         if len(statuses) == 0:
             self.logger.info("No reply.")
 
@@ -298,7 +297,7 @@ if __name__ == "__main__":
     consumer_secret = os.environ["TWITTER_CONSUMER_SECRET"]
     access_token_key = os.environ["TWITTER_ACCESS_TOKEN_KEY"]
     access_token_secret = os.environ["TWITTER_ACCESS_TOKEN_SECRET"]
-    model_filepath = "./result/model.pth"
+    model_filepath = "./result/"
 
     bot = GomiPeopleBot(consumer_key, consumer_secret, access_token_key, access_token_secret,
                         model_filepath, False)
