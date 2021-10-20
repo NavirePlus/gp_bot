@@ -1,16 +1,15 @@
 """ｺﾞﾐﾋﾟｰﾌﾟﾙテキストの生成処理を定義."""
 import math
-from typing import List, Tuple, cast, no_type_check
+import os
+from typing import List, Tuple, cast
 
 import torch
 from torch import Tensor
 
 try:
-    from gp_bot.config import DEFAULT_PARAMS
     from gp_bot.data import BOS_SYMBOL, EOS_SYMBOL, Dictionary
     from gp_bot.model import GPLangModel
 except:
-    from .config import DEFAULT_PARAMS
     from .data import BOS_SYMBOL, EOS_SYMBOL, Dictionary
     from .model import GPLangModel
 
@@ -29,32 +28,33 @@ class GenerateGPText(object):
 
     """
 
-    def __init__(self, model_file: str, cuda: bool = False) -> None:
+    def __init__(self, temperature: float, model_dir: str, cuda: bool = False) -> None:
         """コンストラクタ.
 
         Parameters
         ----------
-        model_file : str
-            モデルファイルパス
+        model_dir : str
+            モデルディレトリパス
         cuda : bool, optional
             CUDAを利用するか否かのフラグ（デフォルト：利用しない）
 
         """
         self.device = torch.device("cuda" if cuda else "cpu")
+        self.temperature = temperature
 
         self.vocab = Dictionary()
-        self.vocab.load(model_file + ".vocab")
+        self.vocab.load(os.path.join(model_dir, "latest_model.pth.vocab"))
 
-        self.model = self.load_model(model_file)
+        self.model = self.load_model(model_dir)
         self.model.eval()
 
-    def load_model(self, path: str) -> GPLangModel:
-        """モデルファイルの読み込み.
+    def load_model(self, model_dir: str) -> GPLangModel:
+        """モデルディレトリの読み込み.
 
         Parameters
         ----------
-        path : str
-            モデルファイルパス
+        model_dir : str
+            モデルディレトリパス
 
         Returns
         -------
@@ -62,11 +62,8 @@ class GenerateGPText(object):
             読み込んだモデル
 
         """
-        model = GPLangModel(n_vocab=len(self.vocab), n_input=DEFAULT_PARAMS["EMB_SIZE"],
-                            n_hidden=DEFAULT_PARAMS["N_HIDDEN"], n_layers=DEFAULT_PARAMS["N_LAYERS"],
-                            dropout=DEFAULT_PARAMS["DROPOUT"])
-        with open(path, "rb") as fp:
-            model.load_state_dict(torch.load(fp))
+        with open(os.path.join(model_dir, "best_model.pth"), "rb") as fp:
+            model: GPLangModel = torch.load(fp).to(self.device)
 
         return model
 
@@ -90,28 +87,25 @@ class GenerateGPText(object):
         # 入力ベクトルとLSTMの隠れユニットの特徴ベクトルを初期化
         t_input = cast(Tensor, torch.tensor([[self.vocab.char2idx[BOS_SYMBOL]]]  # type: ignore
                                             ).to(self.device).type(torch.long))
+        # t_input = torch.randint(len(self.vocab), (1, 1), dtype=torch.long).to(self.device)
         t_hidden = self.model.init_hidden(1)
         with torch.no_grad():
             for _ in range(max_length):
-                res: Tuple[Tensor, Tuple[Tensor, ...]] = self.model(t_input, t_hidden)
-                output = res[0]
-                t_hidden = res[1]
-
                 # 次の文字の語彙IDを予測
-                char_weights: Tensor = torch.div(output.squeeze(), 1.0).exp().cpu()
+                output, t_hidden = self.model(t_input, t_hidden)
+                char_weights = output.squeeze().div(self.temperature).exp().cpu()
                 char_idx = torch.multinomial(char_weights, 1)[0]
+                t_input.fill_(char_idx)
 
                 char = self.vocab.idx2char[int(char_idx.item())]
-                weight = char_weights.log()[char_idx]
-                if char == BOS_SYMBOL or char == EOS_SYMBOL or weight < 1.0:
-                    # 次の文字が開始・終端文字か重みが1未満なら終了
+                weight = char_weights[char_idx]
+                if char == BOS_SYMBOL or char == EOS_SYMBOL or weight < 0.01:
+                    # 次の文字が開始・終端文字か重みが0.01未満なら終了
                     # -> 重みが極端に小さい場合、不自然な文字の繋がりになるため切る
                     break
 
                 chars += char
                 weights.append(weight.item())
-
-                t_input.fill_(char_idx)
 
         if len(weights) == 0 or len(chars.strip()) == 0:
             # 1文字も生成されなかった場合は再生成する
@@ -131,15 +125,19 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
 
     parser = ArgumentParser(description="ｺﾞﾐﾋﾟｰﾌﾟﾙテキストの生成")
+    parser.add_argument("--temperature", help="", type=float, default=1.0)
     parser.add_argument("--cuda", help="CUDAの利用有無", type=bool, default=False)
-    parser.add_argument("--model", help="モデルファイルパス", type=str, default="./result/model.pth")
+    parser.add_argument("--model_dir", help="モデルディレトリパス", type=str, default="./result/")
     args = parser.parse_args()
 
-    gp_generator = GenerateGPText(args.model, args.cuda)
+    gp_generator = GenerateGPText(args.temperature, args.model_dir, args.cuda)
     for _ in range(10):
         text, avg_weight, std_weight = gp_generator(100)
         print(text)
         print(avg_weight)
         print(std_weight)
-        print(avg_weight / std_weight)
+        try:
+            print(avg_weight / std_weight)
+        except ZeroDivisionError:
+            print("0.0")
         print("-" * 80)
