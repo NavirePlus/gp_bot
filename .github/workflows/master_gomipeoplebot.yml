@@ -2,7 +2,7 @@
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 # More info on Python, GitHub Actions, and Azure Functions: https://aka.ms/python-webapps-actions
 
-name: Build and deploy Python project to Azure Function App - GomiPeopleBot
+name: Build and deploy Python project to Azure Function App - gomipeoplebot
 
 on:
   push:
@@ -62,9 +62,9 @@ jobs:
         uses: Azure/functions-action@v1
         id: deploy-to-function
         with:
-          app-name: 'GomiPeopleBot'
+          app-name: 'gomipeoplebot'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_ACC5CA7DC64E4BEA8DD1BAC98283D8B6 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D8AF39A939E84CEAAC8A529BE9C6DD17 }}
           scm-do-build-during-deployment: true
           enable-oryx-build: true
