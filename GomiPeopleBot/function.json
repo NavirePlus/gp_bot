@@ -5,8 +5,7 @@
       "name": "gptimer",
       "type": "timerTrigger",
       "direction": "in",
-      "schedule": "0 */5 * * * *",
-      "runOnStartup": false
+      "schedule": "0 */5 * * * *"
     }
   ]
 }
