@@ -11,8 +11,10 @@
 
 + ｺﾞﾐﾋﾟｰﾌﾟﾙ言語モデルをDeep Learningで学習し、ｺﾞﾐﾋﾟｰﾌﾟﾙテキストを生成、Twitterに投稿するBotです
     + 内部はLSTMを使ったシンプルなEncoder-Decoderモデルです
-+ リプライを5分に1回、ランダムにｺﾞﾐﾋﾟｰﾌﾟﾙテキストを20分に1回呟きます
-+ Azure Functionsで動いています
++ ~~リプライを5分に1回、ランダムにｺﾞﾐﾋﾟｰﾌﾟﾙテキストを20分に1回呟きます~~
++ ~~Azure Functionsで動いています~~
++ **2023/02/02にTwitter社より告知されたAPI有料化により、2023/02/08を持ってGomi People Botは停止しました。**
+    + https://twitter.com/TwitterDev/status/1621026986784337922
 
 ## 参考
 
